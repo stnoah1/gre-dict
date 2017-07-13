@@ -15,6 +15,7 @@ URL = {
 }
 ACCESS_TOKEN = 'ggsFNy54szFtrawF6Qyfvg9vpe8JY25EapwnvfZH'  # expires_in 315360000s
 API_INFO_BASE64 = str(base64.b64encode(bytes((API_INFO["public_id"] + ':' + API_INFO["secret_key"]), "utf-8")), "utf-8")
+# TODO: 고치기
 
 
 def get_data(user_id=API_INFO['id']):
@@ -132,7 +133,7 @@ def get_data_from_quizlet(user_id, table_name):
     거만어 - user_id: {'ilj0411', 'nintyning'}, table_name :'gre_dictionary_2'
     """
     import pandas as pd
-    from naver_dic import CONN
+    from client.db import CONN
 
     data_table = pd.DataFrame(columns=['name', 'meaning', 'day'])
     name = []
@@ -153,14 +154,14 @@ def get_data_from_quizlet(user_id, table_name):
 
 def make_test(start_day, end_day, num_term=25):
     import pandas as pd
-    from naver_dic import CONN
+    from client.db import CONN
 
     return print(pd.read_sql_query(
-        f"""select name, meaning 
-        from gre_dictionary 
-        where day BETWEEN {start_day} 
-        and {end_day} 
-        order by random() 
+        f"""select name, meaning
+        from gre_dictionary
+        where day BETWEEN {start_day}
+        and {end_day}
+        order by random()
         limit {num_term}""",
         CONN,
     ).to_csv(sep='\t', index=False))
