@@ -60,4 +60,4 @@ def update(item_id):
 
 def search_dictionary(dictionary_name, voca):
     data = search(table=DB_INFO['table'][dictionary_name], name=voca).replace('\n', ' ', regex=True)
-    return f'\n박정: {data["meaning"][0]} - day{data["day"][0]} ' if not data.empty else ''
+    return f'\n{dictionary_name}: {data["meaning"][0]} - day{data["day"][0]} ' if not data.empty else ''

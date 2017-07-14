@@ -31,7 +31,7 @@ def main(voca, dict_type, search_count, print_text, history, relevant_data):
         f"{PrintStyle.ENDC}"
         f"{'*'*search_count}"
         f"{PrintStyle.ENDC}\n\n"
-        f"{print_text}\n\n"
+        f"{print_text}\n"
         f"REFERENCE: {dict_type}"
         f"{history}"
         f"{relevant_data}"

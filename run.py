@@ -9,7 +9,9 @@ from exceptions import NoResultError
 from oxford import WrongWordError
 
 
-def main(voca, dict_type):
+def main(dict_type):
+    voca = input("ENTER WORD: ")
+
     first_url, voca = naver.search(voca)
     db_data = db.search(name=voca)
     search_count = 1
@@ -30,17 +32,16 @@ def main(voca, dict_type):
         db.update(db_data['id'])
         print_text = dict_meaning
 
-    relevant_data = '\n'.join(db.search_dictionary(dictionary, voca) for dictionary in ['거만어', '박정'])
+    relevant_data = ''.join(db.search_dictionary(dictionary, voca) for dictionary in ['거만어', '박정'])
     views.main(voca, dict_type, search_count, print_text, history, relevant_data)
-    add_to_quizlet(voca, dict_type)
+    add_to_quizlet(voca, dict_meaning)
 
 
 if __name__ == '__main__':
     os.system("clear")
-    vocabulary = input("ENTER WORD: ")
     while True:
         try:
-            main(vocabulary, settings.NAVER_DICT_TYPE)
+            main(settings.NAVER_DICT_TYPE)
         except NoResultError:
             pass
         except ConnectionError as e:
