@@ -3,7 +3,6 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-import settings
 from exceptions import NoResultError
 from oxford import search_word
 from views import PrintStyle

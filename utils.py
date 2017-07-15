@@ -2,7 +2,6 @@ from datetime import datetime
 
 from client import db, quizlet
 from client.quizlet import get_data
-from exceptions import WrongTypeError
 
 
 def get_data_from_quizlet(user_id, table_name):
@@ -59,4 +58,4 @@ def convert_data(search_date=datetime.today().strftime('%Y-%m-%d'), conversion_t
     elif conversion_type == 'csv':
         return voca_data_set.to_csv(f'gre-{search_date}.csv')
     else:
-        raise WrongTypeError
+        print('error')

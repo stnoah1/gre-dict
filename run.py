@@ -93,16 +93,16 @@ def main():
 if __name__ == '__main__':
     while True:
         os.system("clear")
-        # try:
-        main()
-        # except WrongWordError:
-        #     views.no_result()
-        #     input()
-        # except NoResultError:
-        #     input()
-        # except BaseException as e:
-        #     views.exception(e)
-        #     input()
-        # except ConnectionError as e:
-        #     views.exception(e)
-        #     input()
+        try:
+            main()
+        except WrongWordError:
+            views.no_result()
+            input()
+        except NoResultError:
+            input()
+        except BaseException as e:
+            views.exception(e)
+            input()
+        except ConnectionError as e:
+            views.exception(e)
+            input()
