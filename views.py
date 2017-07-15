@@ -77,11 +77,12 @@ def exception(error):
     print(error)
 
 
-def main(voca=None, dict_type=None, search_count=None, print_text=None, history=None, relevant_data=None, options=None):
+def main(voca=None, dict_type=None, search_count=None,
+         dict_meaning=None, history=None, relevant_data=None, options=None):
     os.system("clear")
     header = f"WORD: {PrintStyle.BOLD}{get_word_color(search_count)}{voca}{PrintStyle.ENDC}" \
              f"{'*'*(search_count if search_count >1 else 0)}{PrintStyle.ENDC}"
-    body = f"{print_text}"
+    body = f"{dict_meaning}"
     footer = f"REFERENCE: {dict_type}\n{history}{relevant_data}"
     print_text = f"{header}\n\n{body}\n{footer}\n\n{next_option(options)}\n"
     print(print_text)

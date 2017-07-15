@@ -13,7 +13,7 @@ from oxford import WrongWordError
 def search_db(voca, options):
     db_data = db.search(name=voca)
     if db_data.empty:
-        return None
+        return {}
     db_data = db_data.iloc[0].to_dict()
     search_count = db_data["count"] if db_data['recent_search'] == datetime.today().strftime('%Y-%m-%d') \
         else db_data["count"] + 1
@@ -24,19 +24,16 @@ def search_db(voca, options):
         'options': options,
         'search_count': search_count,
         'dict_type': db_data['source'],
-        'print_text': db_data['meaning'],
         'dict_meaning': db_data['meaning'],
         'history': f'search_count: {search_count}회, recent_search: {db_data["recent_search"]}\n',
     }
 
 
 def search_naver(voca, dict_type, options, url=None):
+    if dict_type == naver.DEFAULT_DICT:
+        options.append('EXAMPLE')
     naver_data = naver.get_data(voca, url=url, dict_type=dict_type)
     dict_meaning, dict_type = naver.get_dict_data(naver_data['html'], dict_type)
-    if dict_type == 'oxford':
-        print_text, _ = naver.get_dict_data(naver_data['html'], sentence=True)
-    else:
-        print_text = dict_meaning
     threading.Thread(target=db.insert, args=(voca, dict_meaning, dict_type,)).start()
     options.append('PASS')
     return {
@@ -44,7 +41,6 @@ def search_naver(voca, dict_type, options, url=None):
         'history': '',
         'search_count': 1,
         'dict_type': dict_type,
-        'print_text': print_text,
         'options': options,
         'dict_meaning': dict_meaning,
     }
@@ -62,11 +58,8 @@ def main():
         search_data = search_naver(voca, dict_type, options, url=url)
     relevant_data = ''.join(db.search_dictionary(dictionary, search_data['voca']) for dictionary in ['거만어', '박정'])
     search_data.update({'relevant_data': relevant_data})
-
     voca = search_data['voca']
-    view_data = search_data.copy()
-    view_data.pop('dict_meaning')
-    views.main(**view_data)
+    views.main(**search_data)
 
     while True:
         select_option = input().upper()
@@ -81,11 +74,9 @@ def main():
             if select_option == 'EXAMPLE':
                 naver_data = naver.get_data(voca, url=url, dict_type=dict_type)
                 print_text, _ = naver.get_dict_data(naver_data['html'], sentence=True)
-                search_data['print_text'] = print_text
+                search_data['dict_meaning'] = print_text
                 search_data['options'].remove(select_option)
-                view_data = search_data.copy()
-                view_data.pop('dict_meaning')
-                views.main(**view_data)
+                views.main(**search_data)
         else:
             views.wrong_option(select_option)
 
