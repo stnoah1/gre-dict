@@ -5,9 +5,9 @@ from datetime import datetime
 import settings
 import views
 from client import db, naver
+from client.oxford import WrongWordError
 from client.quizlet import send_voca
 from exceptions import NoResultError
-from oxford import WrongWordError
 
 
 def search_db(voca, options):
@@ -48,12 +48,19 @@ def search_naver(voca, dict_type, options, url=None):
     }
 
 
-def main():
-    voca = views.input_voca()
-    dict_type = settings.NAVER_DICT_TYPE
+def main(search_log=None, voca=None):
+    os.system("clear")
+    if search_log is None:
+        search_log = []
+    if not voca:
+        voca = views.input_voca()
 
     url, voca = naver.search(voca)
+    dict_type = settings.NAVER_DICT_TYPE
     options = []
+
+    if search_log:
+        options.append('BACK')
 
     search_data = search_db(voca, options)
     if not search_data:
@@ -86,15 +93,18 @@ def main():
                 view_data = search_data.copy()
                 view_data.pop('etc')
                 views.main(**view_data)
+            if select_option == 'BACK':
+                return main(voca=search_log[-1], search_log=search_log[:-1])
         else:
             views.wrong_option(select_option)
+    return voca
 
 
 if __name__ == '__main__':
+    log = []
     while True:
-        os.system("clear")
         try:
-            main()
+            log.append(main(search_log=log))
         except WrongWordError:
             views.no_result()
             input()

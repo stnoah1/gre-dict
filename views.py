@@ -9,6 +9,7 @@ OPTION = {
     'ENTER': '계속',
     'PASS': '저장하지 않음',
     'EXAMPLE': '예문보기',
+    'BACK': '뒤로'
 }
 
 

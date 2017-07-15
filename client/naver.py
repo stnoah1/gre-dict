@@ -3,8 +3,8 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
+from client.oxford import search_word
 from exceptions import NoResultError
-from oxford import search_word
 from views import PrintStyle
 
 DICT_CSS_SELECTOR = {
