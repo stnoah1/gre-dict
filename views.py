@@ -7,7 +7,8 @@ import time
 
 OPTION = {
     'ENTER': '계속',
-    'PASS': '저장하지 않음'
+    'PASS': '저장하지 않음',
+    'EXAMPLE': '예문보기',
 }
 
 
@@ -61,13 +62,14 @@ def wrong_option(option):
     error_message = f'{PrintStyle.ARROW_UP}{PrintStyle.RED}"{option}" was not determined.{PrintStyle.ENDC}'
     print(error_message, end="\r")
     time.sleep(1)
-    print(' '*len(error_message), end="\r")
+    print(' ' * len(error_message), end="\r")
 
 
 def next_option(options=None):
     if options is None:
         options = []
-    options.append('ENTER')
+    if 'ENTER' not in options:
+        options.append('ENTER')
     return ', '.join(f'[{item}]: {OPTION[item]}' for item in options)
 
 
@@ -75,7 +77,7 @@ def exception(error):
     print(error)
 
 
-def main(voca, dict_type, search_count, print_text, history, relevant_data, options):
+def main(voca=None, dict_type=None, search_count=None, print_text=None, history=None, relevant_data=None, options=None):
     os.system("clear")
     header = f"WORD: {PrintStyle.BOLD}{get_word_color(search_count)}{voca}{PrintStyle.ENDC}" \
              f"{'*'*(search_count if search_count >1 else 0)}{PrintStyle.ENDC}"

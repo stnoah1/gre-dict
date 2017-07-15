@@ -3,6 +3,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
+import settings
 from exceptions import NoResultError
 from oxford import search_word
 from views import PrintStyle
@@ -47,6 +48,8 @@ def request_voca(first_result):
 
 
 def get_dict_data(html, dict_type=DEFAULT_DICT, sentence=False):
+    if sentence:
+        dict_type = DEFAULT_DICT
     bs = BeautifulSoup(html, 'html.parser')
     results = bs.select(DICT_CSS_SELECTOR[dict_type])
     dict_selector = DICT_CSS_SELECTOR.copy()
@@ -92,3 +95,9 @@ def search(voca, refine_voca=False):
         voca = search_word(voca)
     url = f'{URL["base"]}/search.nhn?sLn=kr&isOnlyViewEE=N&query={voca}'
     return get_voca_url(data_request(url))
+
+
+def get_data(voca, url=None, dict_type=DEFAULT_DICT):
+    if not voca:
+        url, voca = search(voca)
+    return {'html': renew_html(url, dict_type), 'voca': voca}
