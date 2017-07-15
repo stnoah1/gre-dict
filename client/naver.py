@@ -1,11 +1,9 @@
 import re
-from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
 
-from client import db, quizlet
-from exceptions import NoResultError, WrongTypeError
+from exceptions import NoResultError
 from oxford import search_word
 from views import PrintStyle
 
@@ -87,23 +85,6 @@ def renew_html(_url, _dict_type):
         _url = f'{URL["ajax"]}?entryId={dict_tag.attrs["entryid"]}'
         _html = data_request(_url)
     return _html
-
-
-def convert_data(search_date=datetime.today().strftime('%Y-%m-%d'), conversion_type='quizlet', add_field=None):
-    if add_field is None:
-        add_field = []
-    field = ['name', 'meaning', *add_field]
-    voca_data_set = db.search(field=field, recent_search=search_date)
-    if conversion_type == 'quizlet':
-        data = {
-            'terms': voca_data_set['name'].tolist(),
-            'definitions': voca_data_set['meaning'].tolist()
-        }
-        return quizlet.create_set(f'gre-{search_date}', data)
-    elif conversion_type == 'csv':
-        return voca_data_set.to_csv(f'gre-{search_date}.csv')
-    else:
-        raise WrongTypeError
 
 
 def search(voca, refine_voca=False):

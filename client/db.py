@@ -13,15 +13,20 @@ DB_INFO = {
         '거만어': 'hackers_dictionary'
     },
 }
-CONN = sqlite3.connect(DB_INFO['path'])
+CONN = sqlite3.connect(database=DB_INFO['path'], check_same_thread=False)
 
 
-def save(_voca, _dict_meaning, source=NAVER_DICT_TYPE):
+def execute_query(query):
+    CONN.execute(query)
+    CONN.commit()
+    return CONN
+
+
+def insert(_voca, _dict_meaning, source=NAVER_DICT_TYPE):
     if _dict_meaning:
         naver_dict = pd.DataFrame({
             'name': [_voca],
             'meaning': [_dict_meaning],
-            'count': [1],
             'source': [source],
         })
         return naver_dict.to_sql(name=DB_INFO['table']['내단어장'], con=CONN, if_exists='append', index=False)
@@ -42,8 +47,16 @@ def search(table=DB_INFO['table']['내단어장'], field=None, **kwargs):
     return df
 
 
+def delete(table=DB_INFO['table']['내단어장'], **kwargs):
+    if len(kwargs) > 0:
+        query_condition = ' where '
+        query_condition += ' and '.join([f'{key}=\'{value}\'' for key, value in kwargs.items()])
+    sql_query = f"delete from {table}{query_condition}"
+    execute_query(sql_query)
+
+
 def update(item_id):
-    CONN.execute(
+    execute_query(
         f"""
         UPDATE {DB_INFO['table']['내단어장']}
         SET count= (
@@ -51,13 +64,12 @@ def update(item_id):
             THEN count+1
             ELSE count
             END
-            ), recent_search=date('now', 'localtime'), memorized='N'
+        ), recent_search=date('now', 'localtime'), memorized='N'
         WHERE id={item_id}
         """
     )
-    CONN.commit()
 
 
 def search_dictionary(dictionary_name, voca):
     data = search(table=DB_INFO['table'][dictionary_name], name=voca).replace('\n', ' ', regex=True)
-    return f'\n{dictionary_name}: {data["meaning"][0]} - day{data["day"][0]} ' if not data.empty else ''
+    return f'{dictionary_name}: {data["meaning"][0]} - day{data["day"][0]}\n' if not data.empty else ''

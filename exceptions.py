@@ -1,7 +1,11 @@
+from views import no_result
+
+
 class NoResultError(Exception):
     def __init__(self):
-        print('NO RESULT. PRESS ENTER')
+        no_result()
 
 
-class WrongTypeError(Exception):
-    pass
+class WrongOptionError(object):
+    def __init__(self):
+        print("wrong option")

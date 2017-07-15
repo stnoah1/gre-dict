@@ -15,6 +15,8 @@ URL = {
 }
 ACCESS_TOKEN = 'ggsFNy54szFtrawF6Qyfvg9vpe8JY25EapwnvfZH'  # expires_in 315360000s
 API_INFO_BASE64 = str(base64.b64encode(bytes((API_INFO["public_id"] + ':' + API_INFO["secret_key"]), "utf-8")), "utf-8")
+
+
 # TODO: 고치기
 
 
@@ -113,7 +115,7 @@ def delete_term(set_id, term_id):
         return r.json()
 
 
-def add_to_quizlet(term, definition):
+def send_voca(term, definition):
     data = {'terms': [term], 'definitions': [definition]}
     set_title = datetime.today().strftime('gre-%Y-%m-%d')
     set_id = None
@@ -125,43 +127,3 @@ def add_to_quizlet(term, definition):
             return
     if not set_id:
         create_set(set_title, data=data)
-
-
-def get_data_from_quizlet(user_id, table_name):
-    """
-    박정 - user_id:'naeun_kim5', table_name :'gre_dictionary_1'
-    거만어 - user_id: {'ilj0411', 'nintyning'}, table_name :'gre_dictionary_2'
-    """
-    import pandas as pd
-    from client.db import CONN
-
-    data_table = pd.DataFrame(columns=['name', 'meaning', 'day'])
-    name = []
-    meaning = []
-    index = []
-    raw_data = get_data(user_id)
-    for day_data in raw_data:
-        if day_data['title'].startswith('거만어 Day'):
-            for term_info in day_data['terms']:
-                name.append(term_info['term'].lower())
-                meaning.append(term_info['definition'])
-                index.append(''.join([s for s in day_data['title'] if s.isdigit()]))
-    data_table['name'] = name
-    data_table['meaning'] = meaning
-    data_table['day'] = index
-    data_table.to_sql(name=table_name, con=CONN, if_exists='append', index=False)
-
-
-def make_test(start_day, end_day, num_term=25):
-    import pandas as pd
-    from client.db import CONN
-
-    return print(pd.read_sql_query(
-        f"""select name, meaning
-        from gre_dictionary
-        where day BETWEEN {start_day}
-        and {end_day}
-        order by random()
-        limit {num_term}""",
-        CONN,
-    ).to_csv(sep='\t', index=False))
