@@ -26,16 +26,17 @@ def search_db(voca, options):
         'dict_type': db_data['source'],
         'dict_meaning': db_data['meaning'],
         'history': f'search_count: {search_count}회, recent_search: {db_data["recent_search"]}\n',
+        'etc': {'source': 'db'},
     }
 
 
 def search_naver(voca, dict_type, options, url=None):
-    if dict_type == naver.DEFAULT_DICT:
-        options.append('EXAMPLE')
     naver_data = naver.get_data(voca, url=url, dict_type=dict_type)
     dict_meaning, dict_type = naver.get_dict_data(naver_data['html'], dict_type)
     threading.Thread(target=db.insert, args=(voca, dict_meaning, dict_type,)).start()
     options.append('PASS')
+    if dict_type == naver.DEFAULT_DICT:
+        options.append('EXAMPLE')
     return {
         'voca': naver_data['voca'],
         'history': '',
@@ -43,6 +44,7 @@ def search_naver(voca, dict_type, options, url=None):
         'dict_type': dict_type,
         'options': options,
         'dict_meaning': dict_meaning,
+        'etc': {'source': 'naver', 'html': naver_data['html']},
     }
 
 
@@ -59,7 +61,9 @@ def main():
     relevant_data = ''.join(db.search_dictionary(dictionary, search_data['voca']) for dictionary in ['거만어', '박정'])
     search_data.update({'relevant_data': relevant_data})
     voca = search_data['voca']
-    views.main(**search_data)
+    view_data = search_data.copy()
+    view_data.pop('etc')
+    views.main(**view_data)
 
     while True:
         select_option = input().upper()
@@ -72,11 +76,16 @@ def main():
                 views.delete_option(voca)
                 break
             if select_option == 'EXAMPLE':
-                naver_data = naver.get_data(voca, url=url, dict_type=dict_type)
-                print_text, _ = naver.get_dict_data(naver_data['html'], sentence=True)
+                if search_data['etc']['source'] == 'naver':
+                    html = search_data['etc']['html']
+                else:
+                    html = naver.get_data(voca, url=url, dict_type=dict_type)['html']
+                print_text, _ = naver.get_dict_data(html, sentence=True)
                 search_data['dict_meaning'] = print_text
                 search_data['options'].remove(select_option)
-                views.main(**search_data)
+                view_data = search_data.copy()
+                view_data.pop('etc')
+                views.main(**view_data)
         else:
             views.wrong_option(select_option)
 
