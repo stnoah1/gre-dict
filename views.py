@@ -3,14 +3,46 @@ import sys
 import termios
 import tty
 
-import time
-
 OPTION = {
-    'ENTER': '계속',
     'PASS': '저장하지 않음',
+    'ENTER': '계속',
+    'DELETE': '삭제',
     'EXAMPLE': '예문보기',
-    'BACK': '뒤로'
+    'BACK': '뒤로',
+    'ENDIC': '영영사전',
+    'KODIC': '한영사전',
 }
+
+
+class Getch:
+    def __call__(self):
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            input_key = sys.stdin.read(1)
+            ch = (input_key + sys.stdin.read(2)) if input_key == '\x1b' else input_key
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+
+def getch():
+    inkey = Getch()
+    while True:
+        k = inkey()
+        if k != '':
+            break
+    if k == '\x1b[C':
+        return 'right'
+    elif k == '\x1b[D':
+        return 'left'
+    elif k == '\r':
+        return 'confirm'
+    elif k == '\x1b\x1b\x1b':
+        exit(1)
+    else:
+        return None
 
 
 class PrintStyle:
@@ -35,55 +67,52 @@ def get_word_color(search_count):
     return word_color
 
 
-def input_voca():
+def input_term():
     return input("ENTER WORD: ")
 
 
-def getch():
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        tty.setraw(sys.stdin.fileno())
-        ch = sys.stdin.read(1)
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-    return ch
-
-
 def no_result():
-    print(f'\nNO RESULT.\n\n{next_option()}')
+    print('\nNO RESULT.\n')
+    show_option(['ENTER'])
 
 
-def delete_option(voca):
-    print(f'{PrintStyle.ARROW_UP}{PrintStyle.BLUE}word "{voca}" was deleted.{PrintStyle.ENDC}')
-    time.sleep(0.5)
+def show_option(options, selected=0, update=False):
+    print_option = []
+    for index, item in enumerate(options):
+        if index == selected:
+            option_color = PrintStyle.PINK
+        else:
+            option_color = PrintStyle.BLUE
+        print_option.append(f'{option_color}[{item}]{PrintStyle.ENDC}:{OPTION[item]}')
+    print(f'\n{PrintStyle.ARROW_UP if update else ""}{" | ".join(print_option)}', end='\r')
 
 
-def wrong_option(option):
-    error_message = f'{PrintStyle.ARROW_UP}{PrintStyle.RED}"{option}" was not determined.{PrintStyle.ENDC}'
-    print(error_message, end="\r")
-    time.sleep(1)
-    print(' ' * len(error_message), end="\r")
-
-
-def next_option(options=None):
-    if options is None:
-        options = []
+def select_option(options, default_option='ENTER'):
     if 'ENTER' not in options:
-        options.append('ENTER')
-    return ', '.join(f'[{item}]: {OPTION[item]}' for item in options)
+        options = ['ENTER'] + options
+    index = options.index(default_option) if default_option in options else 0
+
+    while True:
+        show_option(options, selected=index, update=True)
+        selected = getch()
+        if selected == 'confirm':
+            return options[index]
+        elif selected == 'left':
+            index = (index - 1) if index > 0 else 0
+        elif selected == 'right':
+            index = (index + 1) if index < len(options) - 1 else len(options) - 1
 
 
 def exception(error):
     print(error)
 
 
-def main(voca=None, dict_type=None, search_count=None,
-         dict_meaning=None, history=None, relevant_data=None, options=None):
+def main(term=None, dict_type=None, search_count=None,
+         definition=None, history=None, relevant_data=None):
     os.system("clear")
-    header = f"WORD: {PrintStyle.BOLD}{get_word_color(search_count)}{voca}{PrintStyle.ENDC}" \
+    header = f"WORD: {PrintStyle.BOLD}{get_word_color(search_count)}{term}{PrintStyle.ENDC}" \
              f"{'*'*(search_count if search_count >1 else 0)}{PrintStyle.ENDC}"
-    body = f"{dict_meaning}"
+    body = f"{definition}"
     footer = f"REFERENCE: {dict_type}\n{history}{relevant_data}"
-    print_text = f"{header}\n\n{body}\n{footer}\n\n{next_option(options)}\n"
+    print_text = f"{header}\n\n{body}\n{footer}\n"
     print(print_text)

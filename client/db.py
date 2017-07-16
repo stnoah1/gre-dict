@@ -22,11 +22,11 @@ def execute_query(query):
     return CONN
 
 
-def insert(_voca, _dict_meaning, source=NAVER_DICT_TYPE):
-    if _dict_meaning:
+def insert(term, definition, source=NAVER_DICT_TYPE):
+    if definition:
         naver_dict = pd.DataFrame({
-            'name': [_voca],
-            'meaning': [_dict_meaning],
+            'name': [term],
+            'meaning': [definition],
             'source': [source],
         })
         return naver_dict.to_sql(name=DB_INFO['table']['내단어장'], con=CONN, if_exists='append', index=False)
@@ -70,6 +70,6 @@ def update(item_id):
     )
 
 
-def search_dictionary(dictionary_name, voca):
-    data = search(table=DB_INFO['table'][dictionary_name], name=voca).replace('\n', ' ', regex=True)
+def search_dictionary(dictionary_name, term):
+    data = search(table=DB_INFO['table'][dictionary_name], name=term).replace('\n', ' ', regex=True)
     return f'{dictionary_name}: {data["meaning"][0]} - day{data["day"][0]}\n' if not data.empty else ''

@@ -28,18 +28,18 @@ def data_request(url):
         raise ConnectionError
 
 
-def get_voca_url(html, css_selector='dt.first > span > a'):
+def get_term_url(html, css_selector='dt.first > span > a'):
     bs = BeautifulSoup(html, 'html.parser')
     try:
         first_result = bs.select_one(css_selector)
         first_url = first_result.attrs['href']
-        voca = first_result.text
-        return f'{URL["base"]}/{first_url}', voca
+        term = first_result.text
+        return f'{URL["base"]}/{first_url}', term
     except:
         raise NoResultError
 
 
-def request_voca(first_result):
+def request_term(first_result):
     try:
         return data_request(first_result)
     except:
@@ -79,7 +79,7 @@ def get_dict_data(html, dict_type=DEFAULT_DICT, sentence=False):
 
 
 def renew_html(_url, _dict_type):
-    _html = request_voca(_url)
+    _html = request_term(_url)
     bs = BeautifulSoup(_html, 'html.parser')
     css_id = f'#{DICT_CSS_SELECTOR[_dict_type].split(".")[-1]} > a'
     dict_tag = bs.select_one(css_id)
@@ -89,14 +89,14 @@ def renew_html(_url, _dict_type):
     return _html
 
 
-def search(voca, refine_voca=False):
-    if refine_voca:
-        voca = search_word(voca)
-    url = f'{URL["base"]}/search.nhn?sLn=kr&isOnlyViewEE=N&query={voca}'
-    return get_voca_url(data_request(url))
+def search(term, refine_term=False):
+    if refine_term:
+        term = search_word(term)
+    url = f'{URL["base"]}/search.nhn?sLn=kr&isOnlyViewEE=N&query={term}'
+    return get_term_url(data_request(url))
 
 
-def get_data(voca, url=None, dict_type=DEFAULT_DICT):
-    if not voca:
-        url, voca = search(voca)
-    return {'html': renew_html(url, dict_type), 'voca': voca}
+def get_data(term, url=None, dict_type=DEFAULT_DICT):
+    if not term:
+        url, term = search(term)
+    return {'html': renew_html(url, dict_type), 'term': term}

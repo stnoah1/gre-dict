@@ -4,16 +4,14 @@ import os
 import textwrap
 
 import requests
-import pandas as pd
+
+from exceptions import NoResultError
+from views import PrintStyle
 
 APP_ID = 'e43d4320'
 APP_KEY = '695f70fc2932507841ebc18cdf41f71e'
 API_URL = 'https://od-api.oxforddictionaries.com/api/v1'
 PREFERRED_WIDTH = 110
-
-
-class WrongWordError(BaseException):
-    pass
 
 
 def get_oxford_dict_data(word_id, search_type='', region=''):
@@ -27,7 +25,7 @@ def get_oxford_dict_data(word_id, search_type='', region=''):
     if r.status_code == 200:
         return r.json()['results']
     else:
-        raise WrongWordError
+        raise NoResultError
 
 
 def search_word(word_id):
@@ -36,7 +34,7 @@ def search_word(word_id):
     if r.status_code == 200:
         return r.json()['results'][0]['word']
     else:
-        raise WrongWordError
+        raise NoResultError
 
 
 def get_sentences(voca, word_id):
@@ -60,7 +58,7 @@ def get_synonyms(voca):
     return synonyms
 
 
-def get_voca_info(voca, synonyms=False, num_sentence=10):
+def search(voca, num_sentence=10, synonyms=False, sentence=False):
     etymology_wrapper = textwrap.TextWrapper(initial_indent='Etymology : ',
                                              width=PREFERRED_WIDTH,
                                              subsequent_indent=' ' * (len('Etymology : ')))
@@ -71,43 +69,28 @@ def get_voca_info(voca, synonyms=False, num_sentence=10):
                                               width=PREFERRED_WIDTH,
                                               subsequent_indent=' ' * 5)
 
-    try:
-        voca = search_word(voca)
-        print('\nWord : ' + voca)
-        for result in get_oxford_dict_data(voca, region='us'):
-            for lexicalEntries in result['lexicalEntries']:
-                print('\n*' + lexicalEntries['lexicalCategory'].upper())
-                num_definition = 0
-                for entry in lexicalEntries['entries']:
-                    # 어원
-                    for etymology in [] if entry.get('etymologies') is None else entry['etymologies']:
-                        print(etymology_wrapper.fill(etymology))
-                    # 의미
-                    for index, sense in enumerate(entry['senses']):
-                        if sense.get('definitions'):
-                            for definition in sense['definitions']:
-                                num_definition += 1
-                                print(definition_wrapper.fill(f'{num_definition}. {definition}'))
+    os.system("clear")
+    voca = search_word(voca)
+    print(f'WORD: {PrintStyle.BOLD}{voca}{PrintStyle.ENDC}')
+    for result in get_oxford_dict_data(voca, region='us'):
+        for lexicalEntries in result['lexicalEntries']:
+            print('\n*' + lexicalEntries['lexicalCategory'].upper())
+            num_definition = 0
+            for entry in lexicalEntries['entries']:
+                # 어원
+                for etymology in [] if entry.get('etymologies') is None else entry['etymologies']:
+                    print(etymology_wrapper.fill(etymology))
+                # 의미
+                for index, sense in enumerate(entry['senses']):
+                    if sense.get('definitions'):
+                        for definition in sense['definitions']:
+                            num_definition += 1
+                            print(definition_wrapper.fill(f'{num_definition}. {definition}'))
+                        if sentence:
                             print('\tExample : ')
                             sentences = get_sentences(voca, sense['id'])
                             for index in range(min(len(sentences), num_sentence)):
                                 print(sentences_wrapper.fill(sentences[index]))
-        if synonyms:
-            synonyms = get_synonyms(voca)
-            print('\t\tSynonyms : ', synonyms)
-    except WrongWordError:
-        print('\t\tNo results')
-
-
-def get_gre_voca_by_day(day):
-    voca = pd.read_csv('data/gre_voca_by_day.csv')
-    return voca[voca['Day'] == day]['Word.1'].tolist()
-
-
-if __name__ == '__main__':
-    os.system("clear")
-    while True:
-        get_voca_info(input("Enter word: "))
-        print('\nDone.')
-        input()
-        os.system("clear")
+    if synonyms:
+        synonyms = get_synonyms(voca)
+        print('\t\tSynonyms : ', synonyms)

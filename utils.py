@@ -1,6 +1,9 @@
 from datetime import datetime
 
+import pandas as pd
+
 from client import db, quizlet
+from client.db import CONN
 from client.quizlet import get_data
 
 
@@ -9,8 +12,6 @@ def get_data_from_quizlet(user_id, table_name):
     박정 - user_id:'naeun_kim5', table_name :'gre_dictionary_1'
     거만어 - user_id: {'ilj0411', 'nintyning'}, table_name :'gre_dictionary_2'
     """
-    import pandas as pd
-    from client.db import CONN
 
     data_table = pd.DataFrame(columns=['name', 'meaning', 'day'])
     name = []
@@ -30,9 +31,6 @@ def get_data_from_quizlet(user_id, table_name):
 
 
 def make_test(start_day, end_day, num_term=25):
-    import pandas as pd
-    from client.db import CONN
-
     return pd.read_sql_query(
         f"""select name, meaning
         from gre_dictionary
@@ -59,3 +57,8 @@ def convert_data(search_date=datetime.today().strftime('%Y-%m-%d'), conversion_t
         return voca_data_set.to_csv(f'gre-{search_date}.csv')
     else:
         print('error')
+
+
+def get_gre_voca_by_day(day):
+    voca = pd.read_csv('data/gre_voca_by_day.csv')
+    return voca[voca['Day'] == day]['Word.1'].tolist()

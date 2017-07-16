@@ -4,110 +4,129 @@ from datetime import datetime
 
 import settings
 import views
-from client import db, naver
-from client.oxford import WrongWordError
-from client.quizlet import send_voca
+from client import db, naver, oxford, quizlet
 from exceptions import NoResultError
 
 
-def search_db(voca, options):
-    db_data = db.search(name=voca)
+def search_db(term, options):
+    db_data = db.search(name=term)
     if db_data.empty:
         return {}
+    options.append('DELETE')
     db_data = db_data.iloc[0].to_dict()
     search_count = db_data["count"] if db_data['recent_search'] == datetime.today().strftime('%Y-%m-%d') \
         else db_data["count"] + 1
     threading.Thread(target=db.update, args=(db_data['id'],)).start()
     options.append('EXAMPLE')
-    return {
-        'voca': voca,
-        'options': options,
+    main_text = {
+        'term': term,
         'search_count': search_count,
         'dict_type': db_data['source'],
-        'dict_meaning': db_data['meaning'],
-        'history': f'search_count: {search_count}회, recent_search: {db_data["recent_search"]}\n',
-        'etc': {'source': 'db'},
+        'definition': db_data['meaning'],
+        'history': f'search_count: {search_count}회, recent_search: {db_data["recent_search"]}\n'
     }
 
+    return {'main_text': main_text, 'options': options, 'meta': {'source': 'db'}}
 
-def search_naver(voca, dict_type, options, url=None):
-    naver_data = naver.get_data(voca, url=url, dict_type=dict_type)
-    dict_meaning, dict_type = naver.get_dict_data(naver_data['html'], dict_type)
-    threading.Thread(target=db.insert, args=(voca, dict_meaning, dict_type,)).start()
+
+def search_naver(term, dict_type, options, url=None):
+    naver_data = naver.get_data(term, url=url, dict_type=dict_type)
+    definition, dict_type = naver.get_dict_data(naver_data['html'], dict_type)
     options.append('PASS')
     if dict_type == naver.DEFAULT_DICT:
         options.append('EXAMPLE')
-    return {
-        'voca': naver_data['voca'],
+    main_text = {
+        'term': naver_data['term'],
         'history': '',
         'search_count': 1,
         'dict_type': dict_type,
-        'options': options,
-        'dict_meaning': dict_meaning,
-        'etc': {'source': 'naver', 'html': naver_data['html']},
+        'definition': definition,
     }
+    return {'main_text': main_text, 'options': options, 'meta': {'source': 'naver', 'html': naver_data['html']}}
 
 
-def main(search_log=None, voca=None):
+def main(search_log=None, term=None):
     os.system("clear")
     if search_log is None:
         search_log = []
-    if not voca:
-        voca = views.input_voca()
+    if not term:
+        term = views.input_term()
 
-    url, voca = naver.search(voca)
+    url, term = naver.search(term)
     dict_type = settings.NAVER_DICT_TYPE
-    options = []
 
+    options = ['ENDIC']
     if search_log:
-        options.append('BACK')
+        options = ['BACK'] + options
 
-    search_data = search_db(voca, options)
-    if not search_data:
-        search_data = search_naver(voca, dict_type, options, url=url)
-    relevant_data = ''.join(db.search_dictionary(dictionary, search_data['voca']) for dictionary in ['거만어', '박정'])
-    search_data.update({'relevant_data': relevant_data})
-    voca = search_data['voca']
-    view_data = search_data.copy()
-    view_data.pop('etc')
+    data = search_db(term, options)
+    if not data:
+        data = search_naver(term, dict_type, options, url=url)
+
+    term = data['main_text']['term']
+    definition = data['main_text']['definition']
+    view_data = data['main_text'].copy()
+    options = data['options'].copy()
+    meta_data = data['meta']
+    view_data.update({
+        'relevant_data': ''.join(db.search_dictionary(dictionary, term) for dictionary in ['거만어', '박정'])
+    })
+
+    # main view
     views.main(**view_data)
 
+    # option selection
     while True:
-        select_option = input().upper()
-        if not select_option:
-            threading.Thread(target=send_voca, args=(search_data['voca'], search_data['dict_meaning'],)).start()
+        selected = views.select_option(options)
+
+        if selected == 'PASS':
             break
-        elif select_option in search_data['options']:
-            if select_option == 'PASS':
-                threading.Thread(target=db.delete, kwargs={'name': voca}).start()
-                views.delete_option(voca)
-                break
-            if select_option == 'EXAMPLE':
-                if search_data['etc']['source'] == 'naver':
-                    html = search_data['etc']['html']
-                else:
-                    html = naver.get_data(voca, url=url, dict_type=dict_type)['html']
-                print_text, _ = naver.get_dict_data(html, sentence=True)
-                search_data['dict_meaning'] = print_text
-                search_data['options'].remove(select_option)
-                view_data = search_data.copy()
-                view_data.pop('etc')
-                views.main(**view_data)
-            if select_option == 'BACK':
-                return main(voca=search_log[-1], search_log=search_log[:-1])
-        else:
-            views.wrong_option(select_option)
-    return voca
+
+        elif selected == 'ENTER':
+            if meta_data['source'] == 'naver':
+                threading.Thread(target=db.insert, args=(term, definition, dict_type,)).start()
+            threading.Thread(target=quizlet.send_voca, args=(term, definition,)).start()
+            break
+
+        elif selected == 'DELETE':
+            threading.Thread(target=db.delete, kwargs={'name': term}).start()
+            break
+
+        elif selected == 'BACK':
+            return main(term=search_log[-1], search_log=search_log[:-1])
+
+        elif selected == 'ENDIC':
+            oxford.search(term)
+            options = ['KODIC' if option == 'ENDIC' else option for option in options]
+            options.remove('EXAMPLE')
+            views.show_option(options)
+
+        elif selected == 'KODIC':
+            view_data = data['main_text'].copy()
+            views.main(**view_data)
+            options = data['options'].copy()
+            views.show_option(options)
+
+        elif selected == 'EXAMPLE':
+            if meta_data['source'] == 'naver':
+                html = meta_data['html']
+            else:
+                html = naver.get_data(term, url=url, dict_type=dict_type)['html']
+
+            print_text, _ = naver.get_dict_data(html, sentence=True)
+            view_data['definition'] = print_text
+            views.main(**view_data)
+            options.remove('EXAMPLE')
+            views.show_option(options)
+    return term
 
 
 if __name__ == '__main__':
     log = []
     while True:
         try:
-            log.append(main(search_log=log))
-        except WrongWordError:
-            views.no_result()
-            input()
+            search_result = main(search_log=log)
+            log.append(search_result)
         except NoResultError:
             input()
         except BaseException as e:
