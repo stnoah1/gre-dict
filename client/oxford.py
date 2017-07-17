@@ -59,38 +59,40 @@ def get_synonyms(voca):
 
 
 def search(voca, num_sentence=10, synonyms=False, sentence=False):
-    etymology_wrapper = textwrap.TextWrapper(initial_indent='Etymology : ',
+    # TODO: view 로 리펙토링하기, 비동기 request 사용해서 속도 개선해보기
+    print_text = ''
+    etymology_wrapper = textwrap.TextWrapper(initial_indent='\nEtymology : ',
                                              width=PREFERRED_WIDTH,
                                              subsequent_indent=' ' * (len('Etymology : ')))
     sentences_wrapper = textwrap.TextWrapper(initial_indent=' ' * len('\tExample : ') + '- ',
                                              width=PREFERRED_WIDTH,
                                              subsequent_indent=' ' * (len('\tExample : ') + 2))
-    definition_wrapper = textwrap.TextWrapper(initial_indent='  ',
+    definition_wrapper = textwrap.TextWrapper(initial_indent='\n  ',
                                               width=PREFERRED_WIDTH,
                                               subsequent_indent=' ' * 5)
 
-    os.system("clear")
     voca = search_word(voca)
-    print(f'WORD: {PrintStyle.BOLD}{voca}{PrintStyle.ENDC}')
+    print_text += f'WORD: {PrintStyle.BOLD}{voca}{PrintStyle.ENDC}' + '\n'
     for result in get_oxford_dict_data(voca, region='us'):
         for lexicalEntries in result['lexicalEntries']:
-            print('\n*' + lexicalEntries['lexicalCategory'].upper())
+            print_text += '\n\n*' + lexicalEntries['lexicalCategory'].upper()
             num_definition = 0
             for entry in lexicalEntries['entries']:
                 # 어원
                 for etymology in [] if entry.get('etymologies') is None else entry['etymologies']:
-                    print(etymology_wrapper.fill(etymology))
+                    print_text += etymology_wrapper.fill(etymology)
                 # 의미
                 for index, sense in enumerate(entry['senses']):
                     if sense.get('definitions'):
                         for definition in sense['definitions']:
                             num_definition += 1
-                            print(definition_wrapper.fill(f'{num_definition}. {definition}'))
+                            print_text += definition_wrapper.fill(f'{num_definition}. {definition}')
                         if sentence:
-                            print('\tExample : ')
+                            print_text += '\tExample : '
                             sentences = get_sentences(voca, sense['id'])
                             for index in range(min(len(sentences), num_sentence)):
-                                print(sentences_wrapper.fill(sentences[index]))
+                                print_text += sentences_wrapper.fill(sentences[index])
     if synonyms:
         synonyms = get_synonyms(voca)
-        print('\t\tSynonyms : ', synonyms)
+        print_text += '\t\tSynonyms : ', synonyms
+    return print_text

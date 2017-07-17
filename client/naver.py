@@ -33,7 +33,7 @@ def get_term_url(html, css_selector='dt.first > span > a'):
     try:
         first_result = bs.select_one(css_selector)
         first_url = first_result.attrs['href']
-        term = first_result.text
+        term = first_result.select_one('strong').text
         return f'{URL["base"]}/{first_url}', term
     except:
         raise NoResultError
@@ -78,15 +78,15 @@ def get_dict_data(html, dict_type=DEFAULT_DICT, sentence=False):
     return dict_meaning, dict_type
 
 
-def renew_html(_url, _dict_type):
-    _html = request_term(_url)
-    bs = BeautifulSoup(_html, 'html.parser')
-    css_id = f'#{DICT_CSS_SELECTOR[_dict_type].split(".")[-1]} > a'
+def renew_html(url, dict_type):
+    html = request_term(url)
+    bs = BeautifulSoup(html, 'html.parser')
+    css_id = f'#{DICT_CSS_SELECTOR[dict_type].split(".")[-1]} > a'
     dict_tag = bs.select_one(css_id)
-    if _dict_type != DEFAULT_DICT and dict_tag:
-        _url = f'{URL["ajax"]}?entryId={dict_tag.attrs["entryid"]}'
-        _html = data_request(_url)
-    return _html
+    if dict_type != DEFAULT_DICT and dict_tag:
+        url = f'{URL["ajax"]}?entryId={dict_tag.attrs["entryid"]}'
+        html = data_request(url)
+    return html
 
 
 def search(term, refine_term=False):
@@ -97,6 +97,6 @@ def search(term, refine_term=False):
 
 
 def get_data(term, url=None, dict_type=DEFAULT_DICT):
-    if not term:
+    if url is None:
         url, term = search(term)
     return {'html': renew_html(url, dict_type), 'term': term}

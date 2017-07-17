@@ -6,6 +6,7 @@ import settings
 import views
 from client import db, naver, oxford, quizlet
 from exceptions import NoResultError
+from views import PrintStyle
 
 
 def search_db(term, options):
@@ -33,8 +34,7 @@ def search_naver(term, dict_type, options, url=None):
     naver_data = naver.get_data(term, url=url, dict_type=dict_type)
     definition, dict_type = naver.get_dict_data(naver_data['html'], dict_type)
     options.append('PASS')
-    if dict_type == naver.DEFAULT_DICT:
-        options.append('EXAMPLE')
+    options.append('EXAMPLE')
     main_text = {
         'term': naver_data['term'],
         'history': '',
@@ -96,13 +96,15 @@ def main(search_log=None, term=None):
             return main(term=search_log[-1], search_log=search_log[:-1])
 
         elif selected == 'ENDIC':
-            oxford.search(term)
+            os.system("clear")
+            print(f"WORD: {PrintStyle.BOLD}{term}{PrintStyle.ENDC}", end='\r')
+            print(oxford.search(term))
             options = ['KODIC' if option == 'ENDIC' else option for option in options]
-            options.remove('EXAMPLE')
+            if 'EXAMPLE' in options:
+                options.remove('EXAMPLE')
             views.show_option(options)
 
         elif selected == 'KODIC':
-            view_data = data['main_text'].copy()
             views.main(**view_data)
             options = data['options'].copy()
             views.show_option(options)
