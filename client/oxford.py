@@ -1,6 +1,5 @@
 # for more information on how to install requests
 # http://docs.python-requests.org/en/master/user/install/#install
-import os
 import textwrap
 
 import requests
