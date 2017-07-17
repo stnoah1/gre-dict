@@ -47,11 +47,10 @@ def request_term(first_result):
 
 
 def get_dict_data(html, dict_type=DEFAULT_DICT, sentence=False):
-    if sentence:
-        dict_type = DEFAULT_DICT
     bs = BeautifulSoup(html, 'html.parser')
     results = bs.select(DICT_CSS_SELECTOR[dict_type])
     dict_selector = DICT_CSS_SELECTOR.copy()
+    example = False
 
     while not results:
         dict_selector.pop(dict_type)
@@ -70,12 +69,14 @@ def get_dict_data(html, dict_type=DEFAULT_DICT, sentence=False):
                 dict_meaning += ''.join([index, '.']) if index else '-' + ' '
                 dict_meaning += ' '.join([item.text for item in data.select('em > span')])
                 dict_meaning += '\n'
-            elif sentence and dict_type == DEFAULT_DICT and str(data).startswith('<dd class="first'):
-                dict_meaning += PrintStyle.GREEN + \
-                                re.sub(r'(^\n\n)', '\tex) ', data.text).replace('\n\n', '\n\t    ') + \
-                                PrintStyle.ENDC
+            elif str(data).startswith('<dd class="first'):
+                example = True
+                if sentence:
+                    dict_meaning += PrintStyle.GREEN + \
+                                    re.sub(r'(^\n\n)', '\tex) ', data.text).replace('\n\n', '\n\t    ') + \
+                                    PrintStyle.ENDC
         dict_meaning += '\n'
-    return dict_meaning, dict_type
+    return dict_meaning, dict_type, example
 
 
 def renew_html(url, dict_type):

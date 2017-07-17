@@ -32,9 +32,10 @@ def search_db(term, options):
 
 def search_naver(term, dict_type, options, url=None):
     naver_data = naver.get_data(term, url=url, dict_type=dict_type)
-    definition, dict_type = naver.get_dict_data(naver_data['html'], dict_type)
+    definition, dict_type, example = naver.get_dict_data(naver_data['html'], dict_type)
     options.append('PASS')
-    options.append('EXAMPLE')
+    if example:
+        options.append('EXAMPLE')
     main_text = {
         'term': naver_data['term'],
         'history': '',
@@ -65,6 +66,7 @@ def main(search_log=None, term=None):
 
     term = data['main_text']['term']
     definition = data['main_text']['definition']
+    dict_type = data['main_text']['dict_type']
     view_data = data['main_text'].copy()
     options = data['options'].copy()
     meta_data = data['meta']
@@ -115,7 +117,7 @@ def main(search_log=None, term=None):
             else:
                 html = naver.get_data(term, url=url, dict_type=dict_type)['html']
 
-            print_text, _ = naver.get_dict_data(html, sentence=True)
+            print_text, _, _ = naver.get_dict_data(html, sentence=True)
             view_data['definition'] = print_text
             views.main(**view_data)
             options.remove('EXAMPLE')
