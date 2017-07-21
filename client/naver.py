@@ -20,10 +20,13 @@ URL = {
 DEFAULT_DICT = 'oxford'
 
 
-def data_request(url):
+def data_request(url, return_type='text'):
     r = requests.get(url)
     if r.status_code == 200:
-        return r.text
+        if return_type == 'json':
+            return r.json()
+        else:
+            return r.text
     else:
         raise ConnectionError
 

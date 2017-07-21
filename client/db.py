@@ -38,6 +38,8 @@ def search(table=DB_INFO['table']['내단어장'], field=None, **kwargs):
     if len(kwargs) > 0:
         query_condition = ' where '
         query_condition += ' and '.join([f'{key}=\'{value}\'' for key, value in kwargs.items()])
+    else:
+        query_condition = ''
     if field:
         field = ', '.join(field)
     else:

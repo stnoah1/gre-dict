@@ -100,7 +100,7 @@ def main(search_log=None, term=None):
         elif selected == 'ENDIC':
             os.system("clear")
             print(f"WORD: {PrintStyle.BOLD}{term}{PrintStyle.ENDC}", end='\r')
-            print(oxford.search(term))
+            print(oxford.search(term, num_sentence=2))
             options = ['KODIC' if option == 'ENDIC' else option for option in options]
             if 'EXAMPLE' in options:
                 options.remove('EXAMPLE')

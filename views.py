@@ -27,16 +27,31 @@ class Getch:
         return ch
 
 
-def getch():
+def getch(option='RL'):
+    keymap = {
+        'up': '\x1b[A',
+        'down': '\x1b[B',
+        'right': '\x1b[C',
+        'left': '\x1b[D',
+    }
+    if option == 'Rl':
+        option1 = 'left'
+        option2 = 'right'
+    elif option == 'UD':
+        option1 = 'up'
+        option2 = 'down'
+    else:
+        raise ValueError
+
     inkey = Getch()
     while True:
         k = inkey()
         if k != '':
             break
-    if k == '\x1b[C':
-        return 'right'
-    elif k == '\x1b[D':
-        return 'left'
+    if k == keymap[option2]:
+        return option2
+    elif k == keymap[option1]:
+        return option1
     elif k == '\r':
         return 'confirm'
     elif k == '\x1b\x1b\x1b':
@@ -84,7 +99,7 @@ def show_option(options, selected=0, update=False):
         else:
             option_color = PrintStyle.BLUE
         print_option.append(f'{option_color}[{item}]{PrintStyle.ENDC}:{OPTION[item]}')
-    print(f'\n{PrintStyle.ARROW_UP if update else ""}{" | ".join(print_option)}', end='\r')
+    print(f'\n{PrintStyle.ARROW_UP if update else ""}{"|".join(print_option)}', end='\r')
 
 
 def select_option(options, default_option='ENTER'):

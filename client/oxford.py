@@ -57,20 +57,21 @@ def get_synonyms(voca):
     return synonyms
 
 
-def search(voca, num_sentence=10, synonyms=False, sentence=False):
+def search(voca, num_sentence=0, synonyms=False, refine=False):
     # TODO: view 로 리펙토링하기, 비동기 request 사용해서 속도 개선해보기
     print_text = ''
     etymology_wrapper = textwrap.TextWrapper(initial_indent='\nEtymology : ',
                                              width=PREFERRED_WIDTH,
                                              subsequent_indent=' ' * (len('Etymology : ')))
-    sentences_wrapper = textwrap.TextWrapper(initial_indent=' ' * len('\tExample : ') + '- ',
+    sentences_wrapper = textwrap.TextWrapper(initial_indent='\n' + ' ' * len('\tExample : ') + '- ',
                                              width=PREFERRED_WIDTH,
                                              subsequent_indent=' ' * (len('\tExample : ') + 2))
     definition_wrapper = textwrap.TextWrapper(initial_indent='\n  ',
                                               width=PREFERRED_WIDTH,
                                               subsequent_indent=' ' * 5)
 
-    voca = search_word(voca)
+    if refine:
+        voca = search_word(voca)
     print_text += f'WORD: {PrintStyle.BOLD}{voca}{PrintStyle.ENDC}' + '\n'
     for result in get_oxford_dict_data(voca, region='us'):
         for lexicalEntries in result['lexicalEntries']:
@@ -86,8 +87,8 @@ def search(voca, num_sentence=10, synonyms=False, sentence=False):
                         for definition in sense['definitions']:
                             num_definition += 1
                             print_text += definition_wrapper.fill(f'{num_definition}. {definition}')
-                        if sentence:
-                            print_text += '\tExample : '
+                        if num_sentence > 0:
+                            print_text += '\n\tExample : '
                             sentences = get_sentences(voca, sense['id'])
                             for index in range(min(len(sentences), num_sentence)):
                                 print_text += sentences_wrapper.fill(sentences[index])

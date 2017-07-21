@@ -3,6 +3,8 @@ from datetime import datetime
 
 import requests
 
+from client import naver
+
 API_INFO = {
     'public_id': 'sU7xZkMMzt',
     'secret_key': 'bxZQYJGXAUfZjhDnpjmSAD',
@@ -14,7 +16,7 @@ URL = {
     'auth': 'https://quizlet.com/authorize',
 }
 ACCESS_TOKEN = 'ggsFNy54szFtrawF6Qyfvg9vpe8JY25EapwnvfZH'  # expires_in 315360000s
-API_INFO_BASE64 = str(base64.b64encode(bytes((API_INFO["public_id"] + ':' + API_INFO["secret_key"]), "utf-8")), "utf-8")
+API_INFO_BASE64 = base64.b64encode(f"{API_INFO['public_id']}:{API_INFO['secret_key']}".encode('utf-8')).decode("utf-8")
 
 
 # TODO: 고치기
@@ -127,3 +129,16 @@ def send_voca(term, definition):
             return
     if not set_id:
         create_set(set_title, data=data)
+
+
+def get_shortcut(term, limit=10):
+    data = naver.data_request(
+        f'{URL["base"]}/webapi/3.2/suggestions/definition?'
+        f'corroboration=0&defLang=ko&limit={limit}&localTermId=-1&word={term}&wordLang=en',
+        return_type='json')
+    shortcut_list = [item['text'] for item in data['responses'][0]['data']['suggestions']['suggestions']]
+    if len(shortcut_list) == 0:
+        shortcut = ''
+    else:
+        shortcut = max(shortcut_list, key=len)
+    return shortcut
