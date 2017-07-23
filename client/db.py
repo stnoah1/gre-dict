@@ -46,8 +46,17 @@ def search(table=DB_INFO['table']['내단어장'], field=None, **kwargs):
     else:
         field = '*'
     sql_query = f"select {field} from {table}{query_condition}"
-    df = pd.read_sql_query(sql_query, CONN)
-    return df
+    return pd.read_sql_query(sql_query, CONN)
+
+
+def sort_by_date():
+    return pd.read_sql_query(
+        f"""SELECT recent_search, count(*) AS num_voca
+            FROM my_dictionary
+            GROUP BY recent_search
+            ORDER BY recent_search DESC""",
+        CONN
+    )
 
 
 def delete(table=DB_INFO['table']['내단어장'], **kwargs):
@@ -78,12 +87,15 @@ def search_dictionary(dictionary_name, term):
     return f'{dictionary_name}: {data["meaning"][0]} - day{data["day"][0]}\n' if not data.empty else ''
 
 
-def get_test_word(day):
-    word_list = pd.read_sql_query(
-        f"""SELECT A.name, A.meaning, A.shortcut as shortcut, B.meaning as hackers, C.meaning as park FROM my_dictionary AS A
+def get_test_word(date=None):
+    query = """
+        SELECT A.name, A.meaning, A.shortcut AS shortcut, B.meaning AS hackers, C.meaning AS park
+        FROM my_dictionary AS A
         LEFT JOIN hackers_dictionary AS B
         ON A.name = B.name
         LEFT JOIN park_dictionary AS C
         ON A.name = C.name
-        where a.recent_search = '{day}'""", CONN)
-    return word_list
+        """
+    if date:
+        query += f"WHERE a.recent_search = '{date}'"
+    return pd.read_sql_query(query, CONN)

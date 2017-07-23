@@ -3,8 +3,9 @@ from datetime import datetime
 import pandas as pd
 from bs4 import BeautifulSoup
 
+import search
 from client import db, quizlet, naver
-from views import PrintStyle
+from quiz import run
 
 
 def get_data_from_quizlet(user_id, table_name):
@@ -93,7 +94,6 @@ def synonyms():
 def save_shortcut(word):
     # shortcut = quizlet.get_shortcut(word)
     shortcut = get_shortcut_google(word)
-    print(PrintStyle.BOLD + word + PrintStyle.ENDC + '\n' + shortcut)
     db.execute_query(
         f"""
         UPDATE {db.DB_INFO['table']['내단어장']}
@@ -107,8 +107,9 @@ def update_shortcut():
     word_list = pd.read_sql_query(
         "SELECT name FROM my_dictionary WHERE shortcut IS NULL", db.CONN
     )['name'].tolist()
-    for word in word_list:
+    for index, word in enumerate(word_list):
         save_shortcut(word)
+        print(f'{int((index+1)/len(word_list)*100)}%', end='\r')
 
 
 def get_shortcut_google(word):
@@ -126,3 +127,31 @@ def get_shortcut_google(word):
             shortcut_item.append(f'*{word_types.pop(0)}')
         shortcut_item.append(word_definition)
     return ' '.join(shortcut_item)
+
+
+def test_park():
+    day = input('TEST DAY :')
+    a = pd.read_sql_query(
+        f"""select name, meaning as park
+        from park_dictionary
+        where day = {day}
+        """,
+        db.CONN,
+    )
+    run(a, cycle=2, dict_priority=['park'])
+
+
+def study_park(day):
+    word_list = pd.read_sql_query(
+        f"""select name
+        from park_dictionary
+        where day = {day}
+        """,
+        db.CONN,
+    )['name'].tolist()
+    for word in word_list:
+        search.main(term=word)
+
+
+if __name__ == "main":
+    test_park()

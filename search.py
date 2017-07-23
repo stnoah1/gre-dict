@@ -9,7 +9,7 @@ from exceptions import NoResultError
 from views import PrintStyle
 
 
-def search_db(term, options):
+def search_db(term, options, update=True):
     db_data = db.search(name=term)
     if db_data.empty:
         return {}
@@ -17,7 +17,8 @@ def search_db(term, options):
     db_data = db_data.iloc[0].to_dict()
     search_count = db_data["count"] if db_data['recent_search'] == datetime.today().strftime('%Y-%m-%d') \
         else db_data["count"] + 1
-    threading.Thread(target=db.update, args=(db_data['id'],)).start()
+    if update:
+        threading.Thread(target=db.update, args=(db_data['id'],)).start()
     options.append('EXAMPLE')
     main_text = {
         'term': term,
@@ -52,15 +53,19 @@ def main(search_log=None, term=None):
         search_log = []
     if not term:
         term = views.input_term()
+        update_db = True
+        options = ['ENTER']
+    else:
+        update_db = False
+        options = ['PASS']
 
     url, term = naver.search(term)
     dict_type = settings.NAVER_DICT_TYPE
 
-    options = ['ENDIC']
     if search_log:
         options = ['BACK'] + options
 
-    data = search_db(term, options)
+    data = search_db(term, options, update=update_db)
     if not data:
         data = search_naver(term, dict_type, options, url=url)
 
@@ -79,6 +84,7 @@ def main(search_log=None, term=None):
 
     # option selection
     while True:
+        options = list(set(options))
         selected = views.select_option(options)
 
         if selected == 'PASS':

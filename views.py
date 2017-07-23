@@ -103,8 +103,6 @@ def show_option(options, selected=0, update=False):
 
 
 def select_option(options, default_option='ENTER'):
-    if 'ENTER' not in options:
-        options = ['ENTER'] + options
     index = options.index(default_option) if default_option in options else 0
 
     while True:
