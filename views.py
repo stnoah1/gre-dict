@@ -34,7 +34,7 @@ def getch(option='RL'):
         'right': '\x1b[C',
         'left': '\x1b[D',
     }
-    if option == 'Rl':
+    if option == 'RL':
         option1 = 'left'
         option2 = 'right'
     elif option == 'UD':

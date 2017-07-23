@@ -1,14 +1,10 @@
-import os
-import random
-import re
 from datetime import datetime
 
 import pandas as pd
+from bs4 import BeautifulSoup
 
-from client import db, quizlet
-from client.db import CONN, DB_INFO
-from client.quizlet import get_data, get_shortcut
-from views import PrintStyle, getch
+from client import db, quizlet, naver
+from views import PrintStyle
 
 
 def get_data_from_quizlet(user_id, table_name):
@@ -21,7 +17,7 @@ def get_data_from_quizlet(user_id, table_name):
     name = []
     meaning = []
     index = []
-    raw_data = get_data(user_id)
+    raw_data = quizlet.get_data(user_id)
     for day_data in raw_data:
         if day_data['title'].startswith('거만어 Day'):
             for term_info in day_data['terms']:
@@ -31,7 +27,7 @@ def get_data_from_quizlet(user_id, table_name):
     data_table['name'] = name
     data_table['meaning'] = meaning
     data_table['day'] = index
-    data_table.to_sql(name=table_name, con=CONN, if_exists='append', index=False)
+    data_table.to_sql(name=table_name, con=db.CONN, if_exists='append', index=False)
 
 
 def make_test(start_day, end_day, num_term=25):
@@ -42,7 +38,7 @@ def make_test(start_day, end_day, num_term=25):
         and {end_day}
         order by random()
         limit {num_term}""",
-        CONN,
+        db.CONN,
     ).to_csv(sep='\t', index=False)
     print(a)
 
@@ -73,7 +69,7 @@ def synonyms():
     day_list = []
     term_list = []
     synms_list = []
-    for item in get_data('yyc94'):
+    for item in quizlet.get_data('yyc94'):
         day = ''.join(s for s in item['title'] if s.isdigit())
         for term in item['terms']:
             word = term['term']
@@ -94,113 +90,39 @@ def synonyms():
     # exception 이 너무 많아 다 고려해야되나
 
 
-def update_shortcut(word):
-    shortcut = get_shortcut(word)
-    shortcut = shortcut.replace('\r\n', ';') if '\r\n' in shortcut else shortcut
-    shortcut = shortcut.replace('\r', ';') if '\r' in shortcut else shortcut
-    shortcut = shortcut.replace('\n', ';') if '\n' in shortcut else shortcut
+def save_shortcut(word):
+    # shortcut = quizlet.get_shortcut(word)
+    shortcut = get_shortcut_google(word)
     print(PrintStyle.BOLD + word + PrintStyle.ENDC + '\n' + shortcut)
     db.execute_query(
         f"""
-        UPDATE {DB_INFO['table']['내단어장']}
+        UPDATE {db.DB_INFO['table']['내단어장']}
         SET shortcut = '{shortcut}'
         WHERE name='{word}'
         """
     )
 
 
-def bulk_shortcut_update():
-    word_list = pd.read_sql_query("SELECT name FROM my_dictionary WHERE shortcut IS NULL", CONN)['name'].tolist()
-    print(word_list)
-    for word in word_list:
-        try:
-            update_shortcut(word)
-        except:
-            print(word, 'error')
-
-
-def test(day=datetime.today().strftime('%Y-%m-%d'), cycle=1):
+def update_shortcut():
     word_list = pd.read_sql_query(
-        f"""SELECT A.name, A.meaning, A.shortcut as shortcut, B.meaning as hackers, C.meaning as park FROM my_dictionary AS A
-        LEFT JOIN hackers_dictionary AS B
-        ON A.name = B.name
-        LEFT JOIN park_dictionary AS C
-        ON A.name = C.name
-        where a.recent_search = '{day}'""", CONN)
-    meaning_list = []
-    for index, row in word_list.iterrows():
-        meaning = re.sub(r'(\*)(.*)(\n)', '', row['meaning']).replace('\n\n', '\n')
-        if row['hackers'] is not None:
-            meaning = row['hackers']
-        elif row['park'] is not None:
-            meaning = row['park']
-        elif row['shortcut'] != '':
-            meaning = row['shortcut']
-        else:
-            meaning = meaning.replace('\n', ';')
-        meaning_list.append(meaning.replace('\n', ''))
-    word_list['selection'] = meaning_list
-
-    for i in range(cycle):
-        sequence = word_list.index.tolist()
-        random.shuffle(sequence)
-        for index in sequence:
-            word = word_list.loc[index, 'name']
-
-            correct_ans = word_list.loc[index, 'selection']
-            wrong_ans_pool = word_list.index.tolist()
-            wrong_ans_pool.remove(index)
-            wrong_ans = random.sample(wrong_ans_pool, 4)
-
-            options = word_list.loc[wrong_ans, 'selection'].tolist()
-            options.append(correct_ans)
-
-            random.shuffle(options)
-            os.system('clear')
-            print(f'{PrintStyle.BOLD}Q: {word}{PrintStyle.ENDC}\n')
-            selected = select_option(options)
-            if selected == correct_ans:
-                continue
-            else:
-                show_option(options, ans=True, selected=options.index(correct_ans))
-                input()
+        "SELECT name FROM my_dictionary WHERE shortcut IS NULL", db.CONN
+    )['name'].tolist()
+    for word in word_list:
+        save_shortcut(word)
 
 
-def show_option(options, init=False, selected=0, ans=False):
-    print_option = []
-    arrow_up_cnt = len(options)
-    if ans:
-        selected_color = PrintStyle.RED
-    else:
-        selected_color = PrintStyle.PINK
+def get_shortcut_google(word):
+    html = naver.data_request(
+        f'https://www.google.co.kr/async/dictw?async=term:{word},corpus:en-US,ttl:ko,tsl:en',
+        return_type='json')
+    bs = BeautifulSoup(html[1][1], 'html.parser')
+    # div.vk_txt 영어 예문과 사전이 포함되어 있음
+    word_types = [item.text for item in bs.select('.lr_dct_tg_pos.vk_txt') if item.text]
+    word_definitions = [item.text for item in bs.select('li.vk_txt')]
 
-    for index, item in enumerate(options):
-        if index == selected:
-            option_color = selected_color
-        else:
-            option_color = ''
-        print_option.append(f'{option_color}[{item}]{PrintStyle.ENDC}')
-        print_text = "\n".join(print_option)
-    if init:
-        position = ''
-    else:
-        position = PrintStyle.ARROW_UP * (arrow_up_cnt - 1)
-    print(f'{position}{print_text}', end='\r')
-
-
-def select_option(options):
-    index = 0
-    show_option(options, init=True, selected=index)
-    while True:
-        selected = getch(option='UD')
-        if selected == 'confirm':
-            return options[index]
-        elif selected == 'up':
-            index = (index - 1) if index > 0 else 0
-        elif selected == 'down':
-            index = (index + 1) if index < len(options) - 1 else len(options) - 1
-        show_option(options, selected=index)
-
-
-if __name__ == '__main__':
-    test()
+    shortcut_item = []
+    for word_definition in word_definitions:
+        if ('1' in word_definition) and word_types:
+            shortcut_item.append(f'*{word_types.pop(0)}')
+        shortcut_item.append(word_definition)
+    return ' '.join(shortcut_item)

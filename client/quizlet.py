@@ -134,11 +134,19 @@ def send_voca(term, definition):
 def get_shortcut(term, limit=10):
     data = naver.data_request(
         f'{URL["base"]}/webapi/3.2/suggestions/definition?'
-        f'corroboration=0&defLang=ko&limit={limit}&localTermId=-1&word={term}&wordLang=en',
+        f'corroboration=1&defLang=ko&limit={limit}&localTermId=-1&word={term}&wordLang=en',
         return_type='json')
     shortcut_list = [item['text'] for item in data['responses'][0]['data']['suggestions']['suggestions']]
     if len(shortcut_list) == 0:
         shortcut = ''
     else:
         shortcut = max(shortcut_list, key=len)
+        shortcut = clean_shortcut(str(shortcut), '\r\n', ';')
+        shortcut = clean_shortcut(shortcut, '\n', ';')
+        shortcut = clean_shortcut(shortcut, '\r', ';')
+
     return shortcut
+
+
+def clean_shortcut(shortcut, from_char, to_char):
+    return shortcut.replace(from_char, to_char) if from_char in shortcut else shortcut

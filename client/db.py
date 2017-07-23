@@ -1,12 +1,13 @@
+import os
 import sqlite3
 
 import pandas as pd
 
 from exceptions import NoResultError
-from settings import NAVER_DICT_TYPE
+from settings import NAVER_DICT_TYPE, ROOT_DIR
 
 DB_INFO = {
-    'path': 'voca.db',
+    'path': os.path.join(ROOT_DIR, 'voca.db'),
     'table': {
         '내단어장': 'my_dictionary',
         '박정': 'park_dictionary',
@@ -75,3 +76,14 @@ def update(item_id):
 def search_dictionary(dictionary_name, term):
     data = search(table=DB_INFO['table'][dictionary_name], name=term).replace('\n', ' ', regex=True)
     return f'{dictionary_name}: {data["meaning"][0]} - day{data["day"][0]}\n' if not data.empty else ''
+
+
+def get_test_word(day):
+    word_list = pd.read_sql_query(
+        f"""SELECT A.name, A.meaning, A.shortcut as shortcut, B.meaning as hackers, C.meaning as park FROM my_dictionary AS A
+        LEFT JOIN hackers_dictionary AS B
+        ON A.name = B.name
+        LEFT JOIN park_dictionary AS C
+        ON A.name = C.name
+        where a.recent_search = '{day}'""", CONN)
+    return word_list
