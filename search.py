@@ -58,7 +58,7 @@ def main(search_log=None, term=None):
     else:
         update_db = False
         options = ['PASS']
-
+    options.append('ENDIC')
     url, term = naver.search(term)
     dict_type = settings.NAVER_DICT_TYPE
 
