@@ -102,6 +102,23 @@ def show_option(options, selected=0, update=False):
     print(f'\n{PrintStyle.ARROW_UP if update else ""}{"|".join(print_option)}', end='\r')
 
 
+def separate_line(text, max_text_len=50, indentation=1):
+    count_new_line = 0
+    make_new_life = False
+    if len(text) > max_text_len:
+        new_line_text = []
+        for s_index, s in enumerate(text):
+            if s_index > 0 and s_index % max_text_len == 0:
+                make_new_life = True
+            if make_new_life and s == ' ':
+                count_new_line += 1
+                new_line_text.append('\n' + '\t' * indentation)
+                make_new_life = False
+            new_line_text.append(s)
+        text = ''.join(new_line_text)
+    return text, count_new_line
+
+
 def select_option(options, default_option='ENTER'):
     index = options.index(default_option) if default_option in options else 0
 
