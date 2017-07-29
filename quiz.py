@@ -59,10 +59,15 @@ def run(word_list, rotation=1):
             code_added_options = []
             for code, option in zip(select_code, options):
                 code_added_options.append('. '.join([code, option]))
+            accuracy = int(correct / count * 100) if count > 0 else 0
+            accuracy_color = PrintStyle.RED if accuracy < 70 \
+                else PrintStyle.YELLOW if accuracy < 80 \
+                else PrintStyle.BLUE if accuracy < 90 \
+                else PrintStyle.GREEN
             os.system('clear')
             print(f'rotation:{num_rotation+1}/{rotation}, word: {count+1}/{len(sequence)}, '
                   f'correct: {correct}, incorrect: {count-correct}, '
-                  f'accuracy: {int(correct/count*100) if count>0 else 0}%\n')
+                  f'accuracy: {accuracy_color}{accuracy}{PrintStyle.ENDC}%\n')
             print(f'{PrintStyle.BOLD}Q: {word}{PrintStyle.ENDC}\n')
             selected = select_option(code_added_options)
             if selected == correct_ans_index:
@@ -75,7 +80,7 @@ def run(word_list, rotation=1):
                 wrong_list.append(word)
             show_option(code_added_options, color=ans_color, selected=correct_ans_index)
             input()
-        print(f'test_result - accuracy: {int(len(correct_list)/len(sequence)*100)}%')
+        print(f'test_result - accuracy: {accuracy}%')
     return word_list[word_list['score'] < rotation]
 
 
@@ -187,4 +192,4 @@ if __name__ == '__main__':
             tablefmt='grid'
         ))
         input()
-        fail_list = run(_data, rotation=_rotation)
+        _data = run(_data, rotation=_rotation)
