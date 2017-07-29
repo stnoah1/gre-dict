@@ -3,6 +3,9 @@ import random
 import re
 from datetime import datetime
 
+import pandas as pd
+from tabulate import tabulate
+
 import utils
 from client import db
 from views import PrintStyle, getch
@@ -40,6 +43,8 @@ def run(word_list, cycle=1, dict_priority=None):
     utils.update_shortcut()
     make_data(word_list, dict_priority)
 
+    print(tabulate(word_list[['name', 'selection']], showindex=False, headers=['단어', '의미']))
+    input()
     for num_cycle in range(cycle):
         sequence = word_list.index.tolist()
         random.shuffle(sequence)
@@ -75,7 +80,7 @@ def run(word_list, cycle=1, dict_priority=None):
             show_option(code_added_options, color=ans_color, selected=correct_ans_index)
             input()
         print(f'test_result - accuracy: {int(len(correct_list)/len(sequence)*100)}%')
-    return word_list[word_list['score'] < cycle]['score'].tolist()
+    return word_list[word_list['score'] < cycle]
 
 
 def show_option(options, init=False, selected=0, color='PINK'):
@@ -147,6 +152,39 @@ def select_date():
         return data_by_date.loc[selected_index, 'recent_search']
 
 
+def select_dict():
+    quiz_type = ['my_dictionary', 'hackers', 'park']
+    select_type = select_option(quiz_type, return_type='value')
+    dict_priority = None
+    if select_type == 'my_dictionary':
+        data = make_daily_test_set(select_date())
+    elif select_type in ['hackers', 'park']:
+        os.system("clear")
+        day = input('TEST DAY:')
+        data = pd.read_sql_query(
+            f"""select name, meaning as {select_type}
+            from {select_type}_dictionary
+            where day = {day}
+            """,
+            db.CONN,
+        )
+        dict_priority = [select_type]
+    else:
+        raise ValueError
+    return data, dict_priority
+
+
 if __name__ == '__main__':
-    os.system("clear")
-    run(make_daily_test_set(select_date()))
+    os.system('clear')
+    _data, _dict_priority = select_dict()
+    while True:
+        os.system('clear')
+        cycle = input('CYCLE:')
+        try:
+            cycle = int(cycle)
+            break
+        except:
+            print('NOT A NUMBER!!')
+            input()
+    fail_list = run(_data, cycle=cycle, dict_priority=_dict_priority)
+    print(fail_list)

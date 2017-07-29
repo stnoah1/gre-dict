@@ -1,11 +1,9 @@
 from datetime import datetime
 
 import pandas as pd
-from bs4 import BeautifulSoup
 
 import search
-from client import db, quizlet, naver
-from quiz import run
+from client import db, quizlet, google
 
 
 def get_data_from_quizlet(user_id, table_name):
@@ -93,7 +91,7 @@ def synonyms():
 
 def save_shortcut(word):
     # shortcut = quizlet.get_shortcut(word)
-    shortcut = get_shortcut_google(word)
+    shortcut = google.search(word)
     db.execute_query(
         f"""
         UPDATE {db.DB_INFO['table']['내단어장']}
@@ -110,35 +108,6 @@ def update_shortcut():
     for index, word in enumerate(word_list):
         save_shortcut(word)
         print(f'{int((index+1)/len(word_list)*100)}%', end='\r')
-
-
-def get_shortcut_google(word):
-    html = naver.data_request(
-        f'https://www.google.co.kr/async/dictw?async=term:{word},corpus:en-US,ttl:ko,tsl:en',
-        return_type='json')
-    bs = BeautifulSoup(html[1][1], 'html.parser')
-    # div.vk_txt 영어 예문과 사전이 포함되어 있음
-    word_types = [item.text for item in bs.select('.lr_dct_tg_pos.vk_txt') if item.text]
-    word_definitions = [item.text for item in bs.select('li.vk_txt')]
-
-    shortcut_item = []
-    for word_definition in word_definitions:
-        if ('1' in word_definition) and word_types:
-            shortcut_item.append(f'*{word_types.pop(0)}')
-        shortcut_item.append(word_definition)
-    return ' '.join(shortcut_item)
-
-
-def test_park():
-    day = input('TEST DAY :')
-    a = pd.read_sql_query(
-        f"""select name, meaning as park
-        from park_dictionary
-        where day = {day}
-        """,
-        db.CONN,
-    )
-    run(a, cycle=2, dict_priority=['park'])
 
 
 def study_park(day):

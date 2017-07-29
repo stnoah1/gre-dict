@@ -4,7 +4,7 @@ from datetime import datetime
 
 import settings
 import views
-from client import db, naver, oxford, quizlet
+from client import db, naver, oxford, quizlet, google
 from exceptions import NoResultError
 from views import PrintStyle
 
@@ -93,7 +93,7 @@ def main(search_log=None, term=None):
         elif selected == 'ENTER':
             if meta_data['source'] == 'naver':
                 threading.Thread(target=db.insert, args=(term, definition, dict_type,)).start()
-            threading.Thread(target=quizlet.send_voca, args=(term, definition,)).start()
+            threading.Thread(target=quizlet.send_voca, args=(term, google.search(term, line_sep='\n'),)).start()
             break
 
         elif selected == 'DELETE':
