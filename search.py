@@ -28,7 +28,14 @@ def search_db(term, options, update=True):
         'history': f'search_count: {search_count}회, recent_search: {db_data["recent_search"]}\n'
     }
 
-    return {'main_text': main_text, 'options': options, 'meta': {'source': 'db'}}
+    return {
+        'main_text': main_text,
+        'options': options,
+        'meta': {
+            'source': 'db',
+            'shortcut': db_data['shortcut']
+        }
+    }
 
 
 def search_naver(term, dict_type, options, url=None):
@@ -44,7 +51,15 @@ def search_naver(term, dict_type, options, url=None):
         'dict_type': dict_type,
         'definition': definition,
     }
-    return {'main_text': main_text, 'options': options, 'meta': {'source': 'naver', 'html': naver_data['html']}}
+    return {
+        'main_text': main_text,
+        'options': options,
+        'meta': {
+            'source': 'naver',
+            'html': naver_data['html'],
+            'shortcut': google.search(term, line_sep='\n')
+        }
+    }
 
 
 def main(search_log=None, term=None):
@@ -72,6 +87,7 @@ def main(search_log=None, term=None):
     term = data['main_text']['term']
     definition = data['main_text']['definition']
     dict_type = data['main_text']['dict_type']
+    shortcut = data['meta']['shortcut']
     view_data = data['main_text'].copy()
     options = data['options'].copy()
     meta_data = data['meta']
@@ -92,8 +108,8 @@ def main(search_log=None, term=None):
 
         elif selected == 'ENTER':
             if meta_data['source'] == 'naver':
-                threading.Thread(target=db.insert, args=(term, definition, dict_type,)).start()
-            threading.Thread(target=quizlet.send_voca, args=(term, google.search(term, line_sep='\n'),)).start()
+                threading.Thread(target=db.insert, args=(term, definition, shortcut, dict_type,)).start()
+            threading.Thread(target=quizlet.send_voca, args=(term, shortcut,)).start()
             break
 
         elif selected == 'DELETE':

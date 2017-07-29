@@ -118,6 +118,7 @@ def delete_term(set_id, term_id):
 
 
 def send_voca(term, definition):
+    # todo: bulk insert 가능하게 만들기
     data = {'terms': [term], 'definitions': [definition]}
     set_title = datetime.today().strftime('gre-%Y-%m-%d')
     set_id = None

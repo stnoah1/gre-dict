@@ -4,6 +4,7 @@ import pandas as pd
 
 import search
 from client import db, quizlet, google
+from client.db import save_shortcut
 
 
 def get_data_from_quizlet(user_id, table_name):
@@ -89,24 +90,13 @@ def synonyms():
     # exception 이 너무 많아 다 고려해야되나
 
 
-def save_shortcut(word):
-    # shortcut = quizlet.get_shortcut(word)
-    shortcut = google.search(word)
-    db.execute_query(
-        f"""
-        UPDATE {db.DB_INFO['table']['내단어장']}
-        SET shortcut = '{shortcut}'
-        WHERE name='{word}'
-        """
-    )
-
-
 def update_shortcut():
     word_list = pd.read_sql_query(
         "SELECT name FROM my_dictionary WHERE shortcut IS NULL", db.CONN
     )['name'].tolist()
     for index, word in enumerate(word_list):
-        save_shortcut(word)
+        shortcut = google.search(word)
+        save_shortcut(word, shortcut)
         print(f'{int((index+1)/len(word_list)*100)}%', end='\r')
 
 

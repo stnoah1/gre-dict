@@ -23,12 +23,13 @@ def execute_query(query):
     return CONN
 
 
-def insert(term, definition, source=NAVER_DICT_TYPE):
+def insert(term, definition, shortcut, source=NAVER_DICT_TYPE):
     if definition:
         naver_dict = pd.DataFrame({
             'name': [term],
             'meaning': [definition],
             'source': [source],
+            'shortcut': [shortcut]
         })
         return naver_dict.to_sql(name=DB_INFO['table']['내단어장'], con=CONN, if_exists='append', index=False)
     else:
@@ -99,3 +100,13 @@ def get_test_word(date=None):
     if date:
         query += f"WHERE a.recent_search = '{date}'"
     return pd.read_sql_query(query, CONN)
+
+
+def save_shortcut(word, shortcut):
+    execute_query(
+        f"""
+        UPDATE {DB_INFO['table']['내단어장']}
+        SET shortcut = '{shortcut}'
+        WHERE name='{word}'
+        """
+    )
