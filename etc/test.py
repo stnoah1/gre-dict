@@ -5,7 +5,7 @@ from client.db import CONN
 
 day = 30
 sql_query = f"""
-    SELECT A.name, A.meaning, B.count, B.recent_search 
+    SELECT A.name, A.meaning, B.count, B.recent_search
     FROM hackers_dictionary AS A
     LEFT JOIN my_dictionary AS B
     ON A.name = B.name

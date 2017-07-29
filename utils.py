@@ -120,7 +120,3 @@ def study_park(day):
     )['name'].tolist()
     for word in word_list:
         search.main(term=word)
-
-
-if __name__ == "main":
-    test_park()
